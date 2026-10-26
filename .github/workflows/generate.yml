@@ -1,0 +1,34 @@
+name: Generate review-only documentary
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Topic: universe, history, wars, evolution, biology, future"
+        required: false
+        default: "universe"
+  schedule:
+    - cron: "17 2 * * *"
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - run: pip install -r requirements.txt
+      - name: Render video (never publishes)
+        env:
+          TOPIC: ${{ inputs.topic }}
+        run: python worker.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: documentary-review-${{ github.run_number }}
+          path: output/
+          retention-days: 7
